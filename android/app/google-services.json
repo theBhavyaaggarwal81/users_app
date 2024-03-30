@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "408872853607",
+    "project_id": "uber-flutter-clone-usersapp",
+    "storage_bucket": "uber-flutter-clone-usersapp.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:408872853607:android:ca14eb071639472e4374c2",
+        "android_client_info": {
+          "package_name": "com.example.usres_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC738gHDuDAlZLScE3GjJvwE6YxPaTR4hE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
