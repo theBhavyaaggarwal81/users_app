@@ -47,6 +47,7 @@ dependencies:
   provider:
   flutter_polyline_points:
   loading_animation_widget:
+  flutter_geofire:
 
 
 dev_dependencies:

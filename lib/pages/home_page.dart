@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_geofire/flutter_geofire.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -12,6 +13,8 @@ import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:usres_app/authentication/login_screen.dart';
 import 'package:usres_app/global/trip_var.dart';
+import 'package:usres_app/methods/manage_drivers_methods.dart';
+import 'package:usres_app/models/online_nearby_drivers.dart';
 import 'package:usres_app/pages/search_destination_page.dart';
 import '../appInfo/app_info.dart';
 import '../global/global_var.dart';
@@ -49,7 +52,21 @@ class _HomePageState extends State<HomePage>
   Set<Circle> circleSet = {};
   bool isDrawerOpened = true;
   String stateOfApp = "normal";
+  bool nearbyOnlineDriversKeysLoaded = false;
+  BitmapDescriptor? carIconNearbyDriver;
 
+
+
+  makeDriverNearbyCarIcon()
+  {
+    if(carIconNearbyDriver == null)
+      {
+        ImageConfiguration configuration = createLocalImageConfiguration(context, size: Size(0.5, 0.5));
+        BitmapDescriptor.fromAssetImage(configuration, "assets/images/tracking.png").then((iconImage) {
+          carIconNearbyDriver = iconImage;
+        });
+      }
+  }
 
   void updateMapTheme(GoogleMapController controller)
   {
@@ -81,6 +98,8 @@ class _HomePageState extends State<HomePage>
     await CommonMethods.convertGeoGraphicCoOrdinatesIntoHumanReadableAddress(currentPositionOfUser!, context);
 
     await getUserInfoAndCheckBlockStatus();
+
+    await initializeGeoFireListener();
   }
 
   getUserInfoAndCheckBlockStatus() async
@@ -289,6 +308,76 @@ class _HomePageState extends State<HomePage>
 
   }
 
+  updateAvailableNearbyOnlineDriversOnMap(){
+    setState(() {
+      markerSet.clear();
+    });
+
+    Set<Marker> markersTempSet = Set<Marker>();
+
+    for(OnlineNearbyDrivers eachOnlineNearbyDriver in ManageDriversMethods.nearbyOnlineDriversList){
+      LatLng driverCurrentPostiion = LatLng(eachOnlineNearbyDriver.latDriver!, eachOnlineNearbyDriver.lngDriver!);
+
+      Marker driverMaker = Marker(
+        markerId: MarkerId("driver ID = "+ eachOnlineNearbyDriver.uidDriver.toString()),
+        position: driverCurrentPostiion,
+        icon: carIconNearbyDriver!,
+      );
+
+      markersTempSet.add(driverMaker);
+    }
+
+    setState(() {
+      markerSet = markersTempSet;
+    });
+  }
+
+  initializeGeoFireListener(){
+    Geofire.initialize("onlineDrivers");
+    Geofire.queryAtLocation(currentPositionOfUser!.latitude, currentPositionOfUser!.longitude, 22)!.listen((driverEvent) {
+      if(driverEvent!=null)
+        {
+          var onlineDriverChild = driverEvent["callBack"];
+          switch(onlineDriverChild){
+            case Geofire.onKeyEntered:
+              OnlineNearbyDrivers onlineNearbyDrivers = OnlineNearbyDrivers();
+              onlineNearbyDrivers.uidDriver = driverEvent["key"];
+              onlineNearbyDrivers.latDriver = driverEvent["latitude"];
+              onlineNearbyDrivers.lngDriver = driverEvent["longitude"];
+              ManageDriversMethods.nearbyOnlineDriversList.add(onlineNearbyDrivers);
+
+              if(nearbyOnlineDriversKeysLoaded == true)
+                {
+                  //update drivers on google map
+                  updateAvailableNearbyOnlineDriversOnMap();
+                }
+
+              break;
+            case Geofire.onKeyExited:
+              ManageDriversMethods.removeDriverFromList(driverEvent["key"]);
+              //update drivers on gmaps
+              updateAvailableNearbyOnlineDriversOnMap();
+              break;
+            case Geofire.onKeyMoved:
+              OnlineNearbyDrivers onlineNearbyDrivers = OnlineNearbyDrivers();
+              onlineNearbyDrivers.uidDriver = driverEvent["key"];
+              onlineNearbyDrivers.latDriver = driverEvent["latitude"];
+              onlineNearbyDrivers.lngDriver = driverEvent["longitude"];
+              ManageDriversMethods.updateOnlineNearbyDriversLocation(onlineDriverChild);
+
+              //update drivers on google map
+              updateAvailableNearbyOnlineDriversOnMap();
+              break;
+            case Geofire.onGeoQueryReady:
+              nearbyOnlineDriversKeysLoaded = true;
+              //update drivers on google map
+              updateAvailableNearbyOnlineDriversOnMap();
+              break;
+          }
+        }
+    });
+  }
+
   cancelRideRequest(){
     //remove ride request from database
 
@@ -298,7 +387,10 @@ class _HomePageState extends State<HomePage>
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context)
+  {
+    makeDriverNearbyCarIcon();
+
     return Scaffold(
       key: sKey,
       drawer: Container(
@@ -610,7 +702,7 @@ class _HomePageState extends State<HomePage>
 
                                       displayRequestContainer();
 
-                                      //get nearest avaliable online drivers
+                                      //get nearest available online drivers
 
                                       //
                                     },
