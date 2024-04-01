@@ -16,6 +16,7 @@ import 'package:usres_app/global/trip_var.dart';
 import 'package:usres_app/methods/manage_drivers_methods.dart';
 import 'package:usres_app/models/online_nearby_drivers.dart';
 import 'package:usres_app/pages/search_destination_page.dart';
+import 'package:usres_app/widgets/info_dialog.dart';
 import '../appInfo/app_info.dart';
 import '../global/global_var.dart';
 import '../methods/common_methods.dart';
@@ -55,7 +56,7 @@ class _HomePageState extends State<HomePage>
   bool nearbyOnlineDriversKeysLoaded = false;
   BitmapDescriptor? carIconNearbyDriver;
   DatabaseReference? tripRequestRef;
-
+  List<OnlineNearbyDrivers>? availableNearbyOnlineDriversList;
 
 
   makeDriverNearbyCarIcon()
@@ -438,6 +439,34 @@ class _HomePageState extends State<HomePage>
     });
   }
 
+  noDriverAvailable(){
+    showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) => InfoDialog(
+          title: "No Driver Available",
+          description: "No Driver found in the nearby location. Please try again shortly.",
+        )
+    );
+  }
+
+  searchDriver(){
+    if(availableNearbyOnlineDriversList!.length == 0)
+      {
+        cancelRideRequest();
+        resetAppNow();
+        noDriverAvailable();
+        return;
+      }
+    else{
+      var currentDriver = availableNearbyOnlineDriversList![0];
+
+      //send push notification to current  driver
+
+      availableNearbyOnlineDriversList!.removeAt(0);
+    }
+  }
+
   @override
   Widget build(BuildContext context)
   {
@@ -755,8 +784,9 @@ class _HomePageState extends State<HomePage>
                                       displayRequestContainer();
 
                                       //get nearest available online drivers
-
-                                      //
+                                      availableNearbyOnlineDriversList = ManageDriversMethods.nearbyOnlineDriversList;
+                                      //search driver
+                                      searchDriver();
                                     },
                                     child: Image.asset(
                                       "assets/images/uberexec.png",
