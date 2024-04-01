@@ -54,6 +54,7 @@ class _HomePageState extends State<HomePage>
   String stateOfApp = "normal";
   bool nearbyOnlineDriversKeysLoaded = false;
   BitmapDescriptor? carIconNearbyDriver;
+  DatabaseReference? tripRequestRef;
 
 
 
@@ -116,6 +117,7 @@ class _HomePageState extends State<HomePage>
         {
           setState(() {
             userName = (snap.snapshot.value as Map)["name"];
+            userPhone = (snap.snapshot.value as Map)["phone"];
           });
         }
         else
@@ -305,6 +307,7 @@ class _HomePageState extends State<HomePage>
     });
 
     //send trip request
+    makeTripRequest();
 
   }
 
@@ -378,8 +381,57 @@ class _HomePageState extends State<HomePage>
     });
   }
 
+  makeTripRequest(){
+    tripRequestRef = FirebaseDatabase.instance.ref().child("tripRequests").push();
+
+    var pickUpLocation = Provider.of<AppInfo>(context, listen: false).pickUpLocation;
+    var dropOffDestinationLocation = Provider.of<AppInfo>(context, listen: false).dropOffLocation;
+
+    Map pickUpCoOrdinatesMap = {
+      "latitude": pickUpLocation!.latitudePosition.toString(),
+      "longitude": pickUpLocation.longitudePosition.toString(),
+    };
+    Map dropOffDestinationCoOrdinatesMap = {
+      "latitude": dropOffDestinationLocation!.latitudePosition.toString(),
+      "longitude": dropOffDestinationLocation.longitudePosition.toString(),
+    };
+
+    Map driverCoOrdinates =
+    {
+      "latitude": "",
+      "longitude": "",
+    };
+
+    Map dataMap =
+    {
+      "tripID": tripRequestRef!.key,
+      "publishDateTime":DateTime.now().toString(),
+
+      "userName": userName,
+      "userPhone": userPhone,
+      "userID" : userID,
+      "pickUpLatLng": pickUpCoOrdinatesMap,
+      "dropOffLatLng": dropOffDestinationCoOrdinatesMap,
+      "pickUpAddress": pickUpLocation.placeName,
+      "dropOffAddress": dropOffDestinationLocation.placeName,
+
+      "driverID": "waiting",
+      "carDetails": "",
+      "driverLocation": driverCoOrdinates,
+      "driverName :" : "",
+      "driverPhone": "",
+      "driverPhoto": "",
+      "fareAmount": "",
+      "status": "new",
+
+    };
+
+    tripRequestRef!.set(dataMap);
+  }
+
   cancelRideRequest(){
     //remove ride request from database
+    tripRequestRef!.remove();
 
     setState(() {
       stateOfApp = "normal";

@@ -68,6 +68,7 @@ class CommonMethods
 
       AddressModel model = AddressModel();
       model.humanReadableAddress = humanReadableAddress;
+      model.placeName = humanReadableAddress;
       model.longitudePosition = position.longitude;
       model.latitudePosition = position.latitude;
 
