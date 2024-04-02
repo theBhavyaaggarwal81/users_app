@@ -14,6 +14,7 @@ import 'package:provider/provider.dart';
 import 'package:usres_app/authentication/login_screen.dart';
 import 'package:usres_app/global/trip_var.dart';
 import 'package:usres_app/methods/manage_drivers_methods.dart';
+import 'package:usres_app/methods/push_notification_service.dart';
 import 'package:usres_app/models/online_nearby_drivers.dart';
 import 'package:usres_app/pages/search_destination_page.dart';
 import 'package:usres_app/widgets/info_dialog.dart';
@@ -461,10 +462,41 @@ class _HomePageState extends State<HomePage>
     else{
       var currentDriver = availableNearbyOnlineDriversList![0];
 
-      //send push notification to current  driver
+      //send push notification to current  driver - selected driver
+      sendNotificationToDriver(currentDriver);
 
       availableNearbyOnlineDriversList!.removeAt(0);
     }
+  }
+
+  sendNotificationToDriver(OnlineNearbyDrivers currentDriver){
+    //update driver's newTripStatus - assign tripID to currentDriver
+    DatabaseReference currentDriverRef = FirebaseDatabase.instance
+        .ref()
+        .child("drivers")
+        .child(currentDriver.uidDriver.toString())
+        .child("newTripStatus");
+
+    currentDriverRef.set(tripRequestRef!.key);
+
+    //get current driver's registration token
+    DatabaseReference tokenOfCurrentDriverRef = FirebaseDatabase.instance
+        .ref()
+        .child("drivers")
+        .child(currentDriver.uidDriver.toString())
+        .child("deviceToken");
+
+    tokenOfCurrentDriverRef.once().then((dataSnapshot){
+      if(dataSnapshot.snapshot.value != null) {
+        String deviceToken = dataSnapshot.snapshot.value.toString();
+
+        //send notification
+        PushNotificationService.sendNotificationToSelectedDriver(deviceToken, context, tripRequestRef!.key.toString());
+      }
+      else{
+        return;
+      }
+    });
   }
 
   @override
