@@ -11,6 +11,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
+import 'package:restart_app/restart_app.dart';
 import 'package:usres_app/authentication/login_screen.dart';
 import 'package:usres_app/global/trip_var.dart';
 import 'package:usres_app/methods/manage_drivers_methods.dart';
@@ -297,6 +298,8 @@ class _HomePageState extends State<HomePage>
       carDetailsDriver = "";
       tripStatusDisplay = 'Driver is Arriving';
     });
+
+    Restart.restartApp();
   }
 
   displayRequestContainer(){
