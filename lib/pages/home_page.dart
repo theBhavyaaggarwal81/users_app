@@ -298,8 +298,6 @@ class _HomePageState extends State<HomePage>
       carDetailsDriver = "";
       tripStatusDisplay = 'Driver is Arriving';
     });
-
-    Restart.restartApp();
   }
 
   displayRequestContainer(){
@@ -494,11 +492,49 @@ class _HomePageState extends State<HomePage>
         String deviceToken = dataSnapshot.snapshot.value.toString();
 
         //send notification
-        PushNotificationService.sendNotificationToSelectedDriver(deviceToken, context, tripRequestRef!.key.toString());
+        PushNotificationService.sendNotificationToSelectedDriver(
+            deviceToken,
+            context,
+            tripRequestRef!.key.toString());
       }
       else{
         return;
       }
+
+      const oneTickPerSec = Duration(seconds: 1);
+
+      var timerCountDown = Timer.periodic(oneTickPerSec, (timer) {
+        requestTimeoutDriver = requestTimeoutDriver -1;
+        //when trip request is not requesting means trip request cancelled
+
+        if(stateOfApp != "requesting")
+          {
+            timer.cancel();
+            currentDriverRef.set("cancelled");
+            currentDriverRef.onDisconnect();
+            requestTimeoutDriver = 20;
+          }
+
+        //when trip request is accepted by online nearest available driver
+        currentDriverRef.onValue.listen((dataSnapshot) {
+          if(dataSnapshot.snapshot.value.toString() == "accepted") {
+            timer.cancel();
+            currentDriverRef.onDisconnect();
+            requestTimeoutDriver = 20;
+          }
+        });
+
+        //if 20 seconds passed - send notification to the next online available driver
+        if(requestTimeoutDriver == 0){
+          currentDriverRef.set("timeout");
+          timer.cancel();
+          currentDriverRef.onDisconnect();
+          requestTimeoutDriver = 20;
+
+          //send notification to the next online available driver
+          searchDriver();
+        }
+      });
     });
   }
 
