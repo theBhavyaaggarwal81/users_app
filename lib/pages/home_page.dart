@@ -19,6 +19,7 @@ import 'package:usres_app/methods/push_notification_service.dart';
 import 'package:usres_app/models/online_nearby_drivers.dart';
 import 'package:usres_app/pages/about_page.dart';
 import 'package:usres_app/pages/search_destination_page.dart';
+import 'package:usres_app/pages/trips_history_page.dart';
 import 'package:usres_app/widgets/info_dialog.dart';
 import 'package:usres_app/widgets/payment_dialog.dart';
 import '../appInfo/app_info.dart';
@@ -771,6 +772,19 @@ class _HomePageState extends State<HomePage>
               const SizedBox(height: 10,),
 
               //body
+              GestureDetector(
+                onTap: (){
+                  Navigator.push(context, MaterialPageRoute(builder: (c)=>TripsHistoryPage()));
+                },
+                child: ListTile(
+                  leading: IconButton(
+                    onPressed: (){},
+                    icon: const Icon(Icons.history, color: Colors.grey,),
+                  ),
+                  title: const Text("History", style: TextStyle(color: Colors.grey),),
+                ),
+              ),
+
               GestureDetector(
                 onTap: (){
                   Navigator.push(context, MaterialPageRoute(builder: (c)=>AboutPage()));
