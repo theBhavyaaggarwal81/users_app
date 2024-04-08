@@ -10,14 +10,17 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
+import 'package:restart_app/restart_app.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:usres_app/authentication/login_screen.dart';
 import 'package:usres_app/global/trip_var.dart';
 import 'package:usres_app/methods/manage_drivers_methods.dart';
 import 'package:usres_app/methods/push_notification_service.dart';
 import 'package:usres_app/models/online_nearby_drivers.dart';
+import 'package:usres_app/pages/about_page.dart';
 import 'package:usres_app/pages/search_destination_page.dart';
 import 'package:usres_app/widgets/info_dialog.dart';
+import 'package:usres_app/widgets/payment_dialog.dart';
 import '../appInfo/app_info.dart';
 import '../global/global_var.dart';
 import '../methods/common_methods.dart';
@@ -432,7 +435,7 @@ class _HomePageState extends State<HomePage>
 
     tripRequestRef!.set(dataMap);
 
-    tripStreamSubscription = tripRequestRef!.onValue.listen((eventSnapshot)
+    tripStreamSubscription = tripRequestRef!.onValue.listen((eventSnapshot) async
     {
       if(eventSnapshot.snapshot.value == null)
       {
@@ -501,6 +504,28 @@ class _HomePageState extends State<HomePage>
         setState(() {
           markerSet.removeWhere((element) => element.markerId.value.contains("driver"));
         });
+      }
+      if(status == "ended"){
+        if((eventSnapshot.snapshot.value as Map)["fareAmount"] != null){
+          double fareAmount = double.parse((eventSnapshot.snapshot.value as Map)["fareAmount"].toString());
+
+          var responseFromPaymentDialog = await showDialog(
+              context: context,
+              builder: (BuildContext context) => PaymentDialog(fareAmount: fareAmount.toString()),
+          );
+
+          if(responseFromPaymentDialog == "paid"){
+            tripRequestRef!.onDisconnect();
+            tripRequestRef = null;
+
+            tripStreamSubscription!.cancel();
+            tripStreamSubscription = null;
+
+            resetAppNow();
+
+            Restart.restartApp();
+          }
+        }
       }
     });
   }
@@ -746,12 +771,17 @@ class _HomePageState extends State<HomePage>
               const SizedBox(height: 10,),
 
               //body
-              ListTile(
-                leading: IconButton(
-                  onPressed: (){},
-                  icon: const Icon(Icons.info, color: Colors.grey,),
+              GestureDetector(
+                onTap: (){
+                  Navigator.push(context, MaterialPageRoute(builder: (c)=>AboutPage()));
+                },
+                child: ListTile(
+                  leading: IconButton(
+                    onPressed: (){},
+                    icon: const Icon(Icons.info, color: Colors.grey,),
+                  ),
+                  title: const Text("About", style: TextStyle(color: Colors.grey),),
                 ),
-                title: const Text("About", style: TextStyle(color: Colors.grey),),
               ),
 
               GestureDetector(
